@@ -10,7 +10,7 @@ A JavaFX-based application for solving and graphing polynomial equations up to t
 - Automatically parses user input (e.g., `2x^3 - x + 4 = x^2`)
 - Calculates and displays **real or complex roots**
 - **Graphs the polynomial equation** based on input
-- Clear JavaFX interface with responsive layout
+- Clear JavaFX interface
 - Includes `package.bluej` for easy accessibility and use in BlueJ
 
 ---
