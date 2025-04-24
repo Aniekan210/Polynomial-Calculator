@@ -1,3 +1,4 @@
+
 /********************************************************************
  * Logic class to handle the calculation of the equations
  *
@@ -354,4 +355,14 @@ public class Logic
         
         return result;
     }
-}
+    
+    public double y(double x)
+    {
+        int a = coefficients[0];
+        int b = coefficients[1];
+        int c = coefficients[2];
+        int d = coefficients[3];
+        
+        return a*x*x*x +b*x*x + c*x + d;
+    }
+}   

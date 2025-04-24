@@ -3,6 +3,9 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 
 /***************************************************************************
  * Javafx anchore pane class to act as the ui for the polynomial calculator
@@ -21,6 +24,7 @@ public class PolynomialCalculatorPane extends AnchorPane
     private Label resultLabel;
     private ToggleGroup sideToggleGroup;
     private Logic calculatorLogic = new Logic();
+    private LineChart<Number, Number> lineChart;
     
     public PolynomialCalculatorPane() 
     {
@@ -82,14 +86,32 @@ public class PolynomialCalculatorPane extends AnchorPane
         AnchorPane.setTopAnchor(resultLabel, 215.0);
         AnchorPane.setLeftAnchor(resultLabel, 306.0);
         
-        // Graph placeholder
-        Pane graphPane = new Pane();
-        graphPane.setStyle("-fx-background-color: #FFFFFF;");
-        Label graphLabel = new Label("GOING TO BE GRAPH. JUST HAVENT DONE IT YET");
-        graphPane.getChildren().add(graphLabel);
-        graphPane.setPrefSize(311, 227);
-        AnchorPane.setTopAnchor(graphPane, 332.0);
-        AnchorPane.setLeftAnchor(graphPane, 306.0);
+        // Create axes
+        NumberAxis xAxis = new NumberAxis();
+        NumberAxis yAxis = new NumberAxis();
+        xAxis.setLabel("X Values");
+        yAxis.setLabel("Y Values");
+        
+        // Set axis bounds to match our domain and range
+        yAxis.setAutoRanging(false);
+        yAxis.setLowerBound(-30);
+        yAxis.setUpperBound(30);
+        yAxis.setTickUnit(5);
+        
+        xAxis.setAutoRanging(false);
+        xAxis.setLowerBound(-10);
+        xAxis.setUpperBound(10);
+        xAxis.setTickUnit(1);
+        
+        lineChart = new LineChart<>(xAxis, yAxis);
+        lineChart.setTitle("Equation");
+        lineChart.setCreateSymbols(false);
+        lineChart.setAnimated(false);
+        lineChart.setLegendVisible(false);
+        
+        lineChart.setPrefSize(311, 227);
+        AnchorPane.setTopAnchor(lineChart, 332.0);
+        AnchorPane.setLeftAnchor(lineChart, 306.0);
         
         // Button grid - EXACT match to FXML
         GridPane buttonGrid = new GridPane();
@@ -150,7 +172,7 @@ public class PolynomialCalculatorPane extends AnchorPane
         this.getChildren().addAll(
             titleLabel, lhsRadio, rhsRadio, 
             lhsLabel, equalsLabel, rhsLabel,
-            solveButton, resultLabel, graphPane, buttonGrid
+            solveButton, resultLabel, lineChart, buttonGrid
         );
         
         // Set radio button listener
@@ -323,6 +345,19 @@ public class PolynomialCalculatorPane extends AnchorPane
         }
         
         calculatorLogic.set(lhs, rhs);
+        
         resultLabel.setText(calculatorLogic.calculate());
+        lineChart.setTitle("Graph: " + calculatorLogic.getEquation());
+        
+        XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        series.setName("Function");
+        
+        double step = 0.01;
+        for (double x = -10; x <= 10; x += step) {
+            series.getData().add(new XYChart.Data<>(x, calculatorLogic.y(x)));
+        }
+                
+        lineChart.getData().clear();
+        lineChart.getData().add(series);
     }
 }
