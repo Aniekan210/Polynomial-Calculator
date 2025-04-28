@@ -6,15 +6,13 @@ import javafx.geometry.Pos;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.paint.Color;
+import javafx.stage.Stage;
+import javafx.stage.Modality;
+import javafx.scene.Scene;
+import javafx.scene.effect.DropShadow;
 
-/***************************************************************************
- * Javafx anchore pane class to act as the ui for the polynomial calculator
- *
- * @author Aniekan Ekarika
- * @version v1 max calc is cubic
- ***************************************************************************/
-public class PolynomialCalculatorPane extends AnchorPane 
-{
+public class PolynomialCalculatorPane extends AnchorPane {
     private StringBuilder leftHandSide = new StringBuilder();
     private StringBuilder rightHandSide = new StringBuilder();
     private boolean isLeftSideActive = true;
@@ -24,75 +22,289 @@ public class PolynomialCalculatorPane extends AnchorPane
     private Label resultLabel;
     private ToggleGroup sideToggleGroup;
     private Logic calculatorLogic = new Logic();
-    private LineChart<Number, Number> lineChart;
     
-    public PolynomialCalculatorPane() 
-    {
+    // Dark color palette
+    private final Color DARK_BASE = Color.web("#1a1a1a");
+    private final Color DARK_SURFACE = Color.web("#2d2d2d");
+    private final Color ACCENT_GREEN = Color.web("#4CAF50");
+    private final Color LIGHT_TEXT = Color.web("#e0e0e0");
+    private final Color DARK_TEXT = Color.web("#212121");
+    private final Color HIGHLIGHT = Color.web("#3e3e3e");
+    private final Color ERROR_RED = Color.web("#ef5350");
+    
+    public PolynomialCalculatorPane() {
         initializeUI();
     }
     
-    private void initializeUI() 
-    {
-        this.setPrefSize(629, 574);
-        this.setStyle("-fx-background-color: #ffd9f0;");
+    private void initializeUI() {
+        this.setPrefSize(700, 650);
+        this.setStyle("-fx-background-color: " + toHex(DARK_BASE) + ";");
         
-        // Title
-        Label titleLabel = new Label("Polynomial Calculator");
-        titleLabel.setFont(Font.font("Verdana", 36));
-        AnchorPane.setTopAnchor(titleLabel, 14.0);
-        AnchorPane.setLeftAnchor(titleLabel, 121.0);
+        // Title (centered at top)
+        Label titleLabel = new Label("POLYNOMIAL CALCULATOR");
+        titleLabel.setFont(Font.font("Roboto", 24));
+        titleLabel.setTextFill(LIGHT_TEXT);
+        AnchorPane.setTopAnchor(titleLabel, 20.0);
+        AnchorPane.setLeftAnchor(titleLabel, 0.0);
+        AnchorPane.setRightAnchor(titleLabel, 0.0);
+        titleLabel.setAlignment(Pos.CENTER);
         
-        // Radio buttons
+        // Side selector (left side)
+        VBox sideSelector = new VBox(5);
+        sideSelector.setAlignment(Pos.CENTER_LEFT);
+        
         sideToggleGroup = new ToggleGroup();
-        RadioButton lhsRadio = new RadioButton("LEFT HAND SIDE");
-        lhsRadio.setFont(Font.font("Verdana", 12));
-        lhsRadio.setToggleGroup(sideToggleGroup);
+        ToggleButton lhsRadio = createToggleButton("LEFT SIDE");
         lhsRadio.setSelected(true);
-        AnchorPane.setTopAnchor(lhsRadio, 67.0);
-        AnchorPane.setLeftAnchor(lhsRadio, 8.0);
+        ToggleButton rhsRadio = createToggleButton("RIGHT SIDE");
         
-        RadioButton rhsRadio = new RadioButton("RIGHT HAND SIDE");
-        rhsRadio.setFont(Font.font("Verdana", 12));
-        rhsRadio.setToggleGroup(sideToggleGroup);
-        AnchorPane.setTopAnchor(rhsRadio, 88.0);
-        AnchorPane.setLeftAnchor(rhsRadio, 8.0);
+        sideSelector.getChildren().addAll(lhsRadio, rhsRadio);
+        AnchorPane.setTopAnchor(sideSelector, 70.0);
+        AnchorPane.setLeftAnchor(sideSelector, 20.0);
         
-        // Equation labels
-        lhsLabel = createEquationLabel("LHS", 8.0);
+        // Equation display (center)
+        HBox equationDisplay = new HBox(10);
+        equationDisplay.setAlignment(Pos.CENTER);
+        
+        lhsLabel = createEquationDisplayLabel("LHS");
         Label equalsLabel = new Label("=");
-        equalsLabel.setFont(Font.font("Verdana Bold", 24));
-        equalsLabel.setStyle("-fx-background-color: transparent;");
-        AnchorPane.setTopAnchor(equalsLabel, 109.0);
-        AnchorPane.setLeftAnchor(equalsLabel, 305.0);
+        equalsLabel.setFont(Font.font("Roboto", 24));
+        equalsLabel.setTextFill(LIGHT_TEXT);
+        rhsLabel = createEquationDisplayLabel("RHS");
         
-        rhsLabel = createEquationLabel("RHS", 333.0);
+        equationDisplay.getChildren().addAll(lhsLabel, equalsLabel, rhsLabel);
+        AnchorPane.setTopAnchor(equationDisplay, 110.0);
+        AnchorPane.setLeftAnchor(equationDisplay, 150.0);
         
-        // Solve button
-        Button solveButton = new Button("Solve!!!");
-        solveButton.setStyle("-fx-background-color: #19c402; -fx-border-color: #000000;");
-        solveButton.setTextFill(javafx.scene.paint.Color.WHITE);
-        solveButton.setFont(Font.font("Verdana", 14));
-        AnchorPane.setTopAnchor(solveButton, 167.0);
-        AnchorPane.setLeftAnchor(solveButton, 269.0);
+        // Solve button (below equation)
+        Button solveButton = new Button("SOLVE");
+        solveButton.setStyle("-fx-background-color: " + toHex(ACCENT_GREEN) + ";");
+        solveButton.setTextFill(DARK_TEXT);
+        solveButton.setFont(Font.font("Roboto", 14));
+        solveButton.setPadding(new Insets(8, 20, 8, 20));
         solveButton.setOnAction(e -> solveEquation());
+        setupButtonHoverEffect(solveButton);
         
-        // Result label
-        resultLabel = new Label("RESULT LABEL");
-        resultLabel.setFont(Font.font("Verdana", 14));
-        resultLabel.setStyle("-fx-background-color: #FFFFFF;");
+        AnchorPane.setTopAnchor(solveButton, 160.0);
+        AnchorPane.setLeftAnchor(solveButton, 300.0);
+        
+        // Button grid (left side)
+        GridPane buttonGrid = createButtonGrid();
+        AnchorPane.setTopAnchor(buttonGrid, 220.0);
+        AnchorPane.setLeftAnchor(buttonGrid, 30.0);
+        
+        // Right side container (holds result and graph button)
+        VBox rightSideContainer = new VBox();
+        rightSideContainer.setSpacing(20); // Space between result and graph button
+        rightSideContainer.setPrefWidth(300);
+        AnchorPane.setTopAnchor(rightSideContainer, 220.0);
+        AnchorPane.setLeftAnchor(rightSideContainer, 350.0);
+        
+        // Result display
+        VBox resultSection = createResultSection();
+        
+        // Graph button (centered horizontally in right side container)
+        HBox graphButtonContainer = new HBox();
+        graphButtonContainer.setAlignment(Pos.CENTER);
+        
+        Button graphButton = new Button("VIEW GRAPH");
+        graphButton.setStyle("-fx-background-color: " + toHex(ACCENT_GREEN) + ";");
+        graphButton.setTextFill(DARK_TEXT);
+        graphButton.setFont(Font.font("Roboto", 14));
+        graphButton.setPadding(new Insets(8, 20, 8, 20));
+        graphButton.setOnAction(e -> showGraphWindow());
+        setupButtonHoverEffect(graphButton);
+        
+        graphButtonContainer.getChildren().add(graphButton);
+        
+        rightSideContainer.getChildren().addAll(resultSection, graphButtonContainer);
+        this.getChildren().addAll(
+            titleLabel, sideSelector, equationDisplay, 
+            solveButton, buttonGrid, rightSideContainer
+        );
+        
+        // Set radio button listener
+        sideToggleGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
+            isLeftSideActive = newVal == lhsRadio;
+        });
+    }
+    
+    private VBox createResultSection() {
+        VBox container = new VBox(5);
+        container.setAlignment(Pos.TOP_LEFT);
+        
+        resultLabel = new Label("Enter an equation and click SOLVE");
+        resultLabel.setFont(Font.font("Roboto Mono", 14));
+        resultLabel.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + "; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
+        resultLabel.setPadding(new Insets(10));
+        resultLabel.setPrefSize(300, 150);
+        resultLabel.setWrapText(true);
         resultLabel.setAlignment(Pos.TOP_LEFT);
-        resultLabel.setPadding(new Insets(5));
-        resultLabel.setPrefSize(311, 102);
-        AnchorPane.setTopAnchor(resultLabel, 215.0);
-        AnchorPane.setLeftAnchor(resultLabel, 306.0);
         
-        // Create axes
+        container.getChildren().addAll(resultLabel);
+        return container;
+    }
+    
+    private ToggleButton createToggleButton(String text) {
+        ToggleButton button = new ToggleButton(text);
+        button.setToggleGroup(sideToggleGroup);
+        button.setFont(Font.font("Roboto", 12));
+        button.setStyle("-fx-background-color: transparent; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
+        
+        button.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                button.setStyle("-fx-background-color: " + toHex(HIGHLIGHT) + "; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
+            } else {
+                button.setStyle("-fx-background-color: transparent; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
+            }
+        });
+        
+        return button;
+    }
+    
+    private Label createEquationDisplayLabel(String text) {
+        Label label = new Label(text);
+        label.setFont(Font.font("Roboto Mono", 14));
+        label.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + ";");
+        label.setTextFill(LIGHT_TEXT);
+        label.setPadding(new Insets(10, 15, 10, 15));
+        label.setPrefSize(200, 40);
+        return label;
+    }
+    
+    private GridPane createButtonGrid() {
+        GridPane buttonGrid = new GridPane();
+        buttonGrid.setHgap(8);
+        buttonGrid.setVgap(8);
+        buttonGrid.setPadding(new Insets(10));
+        buttonGrid.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + ";");
+        
+        // Column constraints
+        for (int i = 0; i < 3; i++) {
+            ColumnConstraints col = new ColumnConstraints();
+            col.setPrefWidth(80);
+            buttonGrid.getColumnConstraints().add(col);
+        }
+        
+        // Row constraints
+        for (int i = 0; i < 6; i++) {
+            RowConstraints row = new RowConstraints();
+            row.setPrefHeight(60);
+            buttonGrid.getRowConstraints().add(row);
+        }
+        
+        // Add buttons
+        buttonGrid.add(createMathButton("x"), 0, 0);
+        buttonGrid.add(createMathButton("x²"), 1, 0);
+        buttonGrid.add(createMathButton("x³"), 2, 0);
+
+        buttonGrid.add(createNumberButton("7"), 0, 1);
+        buttonGrid.add(createNumberButton("8"), 1, 1);
+        buttonGrid.add(createNumberButton("9"), 2, 1);
+        
+        buttonGrid.add(createNumberButton("4"), 0, 2);
+        buttonGrid.add(createNumberButton("5"), 1, 2);
+        buttonGrid.add(createNumberButton("6"), 2, 2);
+        
+        buttonGrid.add(createNumberButton("1"), 0, 3);
+        buttonGrid.add(createNumberButton("2"), 1, 3);
+        buttonGrid.add(createNumberButton("3"), 2, 3);
+        
+        buttonGrid.add(createOperatorButton("-"), 0, 4);
+        buttonGrid.add(createNumberButton("0"), 1, 4);
+        buttonGrid.add(createOperatorButton("+"), 2, 4);
+        
+        Button clrButton = createControlButton("CLR");
+        GridPane.setColumnSpan(clrButton, 1);
+        buttonGrid.add(clrButton, 0, 5);
+        
+        Button delButton = createControlButton("DEL");
+        GridPane.setColumnSpan(delButton, 1);
+        buttonGrid.add(delButton, 1, 5);
+        
+        return buttonGrid;
+    }
+    
+    private Button createNumberButton(String text) {
+        Button button = new Button(text);
+        button.setFont(Font.font("Roboto", 18));
+        button.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + "; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
+        button.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        button.setOnAction(e -> handleButtonPress(text));
+        setupButtonHoverEffect(button);
+        return button;
+    }
+    
+    private Button createMathButton(String text) {
+        Button button = new Button(text);
+        button.setFont(Font.font("Roboto", 18));
+        button.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + "; -fx-text-fill: " + toHex(ACCENT_GREEN) + ";");
+        button.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        button.setOnAction(e -> handleButtonPress(text.equals("x²") ? "x^2" : text.equals("x³") ? "x^3" : text));
+        setupButtonHoverEffect(button);
+        return button;
+    }
+    
+    private Button createOperatorButton(String text) {
+        Button button = new Button(text);
+        button.setFont(Font.font("Roboto", 18));
+        button.setStyle("-fx-background-color: " + toHex(HIGHLIGHT) + "; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
+        button.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        button.setOnAction(e -> handleButtonPress(text));
+        setupButtonHoverEffect(button);
+        return button;
+    }
+    
+    private Button createControlButton(String text) {
+        Button button = new Button(text);
+        button.setFont(Font.font("Roboto", 14));
+        button.setStyle("-fx-background-color: " + toHex(HIGHLIGHT) + "; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
+        button.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        button.setOnAction(e -> handleButtonPress(text.equals("CLR") ? "CLR" : "DEL"));
+        setupButtonHoverEffect(button);
+        return button;
+    }
+    
+    private void setupButtonHoverEffect(Button button) {
+        final DropShadow glow = new DropShadow();
+        glow.setColor(ACCENT_GREEN.brighter());
+        glow.setWidth(15);
+        glow.setHeight(15);
+        glow.setRadius(5);
+        
+        button.setOnMouseEntered(e -> {
+            button.setEffect(glow);
+            button.setScaleX(1.05);
+            button.setScaleY(1.05);
+        });
+        
+        button.setOnMouseExited(e -> {
+            button.setEffect(null);
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+    }
+    
+    private void showGraphWindow() {
+        if (leftHandSide.length() == 0 || rightHandSide.length() == 0) {
+            resultLabel.setText("Error: Enter an equation first");
+            resultLabel.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + "; -fx-text-fill: " + toHex(ERROR_RED) + ";");
+            return;
+        }
+        
+        solveEquation();
+        
+        Stage graphStage = new Stage();
+        graphStage.setTitle("Graph: " + calculatorLogic.getEquation());
+        
         NumberAxis xAxis = new NumberAxis();
         NumberAxis yAxis = new NumberAxis();
         xAxis.setLabel("X Values");
         yAxis.setLabel("Y Values");
         
-        // Set axis bounds to match our domain and range
+        xAxis.setStyle("-fx-tick-label-fill: " + toHex(LIGHT_TEXT) + ";");
+        yAxis.setStyle("-fx-tick-label-fill: " + toHex(LIGHT_TEXT) + ";");
+        
         yAxis.setAutoRanging(false);
         yAxis.setLowerBound(-30);
         yAxis.setUpperBound(30);
@@ -103,138 +315,63 @@ public class PolynomialCalculatorPane extends AnchorPane
         xAxis.setUpperBound(10);
         xAxis.setTickUnit(1);
         
-        lineChart = new LineChart<>(xAxis, yAxis);
-        lineChart.setTitle("Equation");
+        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
         lineChart.setCreateSymbols(false);
         lineChart.setAnimated(false);
         lineChart.setLegendVisible(false);
+        lineChart.setStyle("-fx-background-color: " + toHex(DARK_BASE) + ";");
         
-        lineChart.setPrefSize(311, 227);
-        AnchorPane.setTopAnchor(lineChart, 332.0);
-        AnchorPane.setLeftAnchor(lineChart, 306.0);
+        XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        series.setName("Function");
         
-        // Button grid - EXACT match to FXML
-        GridPane buttonGrid = new GridPane();
-        buttonGrid.setStyle("-fx-background-color: #ffffff;");
-        buttonGrid.setPrefSize(277, 346);
-        AnchorPane.setTopAnchor(buttonGrid, 215.0);
-        AnchorPane.setLeftAnchor(buttonGrid, 14.0);
-        
-        // Column constraints
-        ColumnConstraints col1 = new ColumnConstraints();
-        col1.setPrefWidth(101);
-        ColumnConstraints col2 = new ColumnConstraints();
-        col2.setPrefWidth(101);
-        ColumnConstraints col3 = new ColumnConstraints();
-        col3.setPrefWidth(101);
-        buttonGrid.getColumnConstraints().addAll(col1, col2, col3);
-        
-        // Row constraints
-        for (int i = 0; i < 5; i++) 
-        {
-            RowConstraints row = new RowConstraints();
-            row.setPrefHeight(96);
-            buttonGrid.getRowConstraints().add(row);
+        double step = 0.1;
+        for (double x = -10; x <= 10; x += step) {
+            double y = calculatorLogic.y(x);
+            series.getData().add(new XYChart.Data<>(x, y));
         }
-        RowConstraints lastRow = new RowConstraints();
-        lastRow.setPrefHeight(57);
-        buttonGrid.getRowConstraints().add(lastRow);
         
-        // Add buttons in EXACT FXML positions
-        buttonGrid.add(createGridButton("x"), 0, 0);
-        buttonGrid.add(createGridButton("x^2"), 1, 0);
-        buttonGrid.add(createGridButton("x^3"), 2, 0);
-
-        buttonGrid.add(createGridButton("7"), 0, 1);
-        buttonGrid.add(createGridButton("8"), 1, 1);
-        buttonGrid.add(createGridButton("9"), 2, 1);
+        lineChart.getData().add(series);
+        lineChart.lookup(".chart-series-line").setStyle("-fx-stroke: " + toHex(ACCENT_GREEN) + ";");
         
-        buttonGrid.add(createGridButton("4"), 0, 2);
-        buttonGrid.add(createGridButton("5"), 1, 2);
-        buttonGrid.add(createGridButton("6"), 2, 2);
+        StackPane root = new StackPane(lineChart);
+        root.setStyle("-fx-background-color: " + toHex(DARK_BASE) + ";");
         
-        buttonGrid.add(createGridButton("1"), 0, 3);
-        buttonGrid.add(createGridButton("2"), 1, 3);
-        buttonGrid.add(createGridButton("3"), 2, 3);
-        
-        buttonGrid.add(createGridButton("-"), 0, 4);
-        buttonGrid.add(createGridButton("0"), 1, 4);
-        buttonGrid.add(createGridButton("+"), 2, 4);
-        
-        Button clrButton = createGridButton("CLR");
-        clrButton.setPrefHeight(57);
-        buttonGrid.add(clrButton, 0, 5);
-        
-        Button delButton = createGridButton("DEL");
-        delButton.setPrefHeight(57);
-        buttonGrid.add(delButton, 1, 5);
-        
-        this.getChildren().addAll(
-            titleLabel, lhsRadio, rhsRadio, 
-            lhsLabel, equalsLabel, rhsLabel,
-            solveButton, resultLabel, lineChart, buttonGrid
-        );
-        
-        // Set radio button listener
-        sideToggleGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
-            isLeftSideActive = newVal == lhsRadio;
-        });
+        Scene scene = new Scene(root, 600, 400);
+        graphStage.setScene(scene);
+        graphStage.show();
     }
     
-    private Label createEquationLabel(String text, double left) 
-    {
-        Label label = new Label(text);
-        label.setFont(Font.font("Verdana", 12));
-        label.setStyle("-fx-background-color: #cdebfa; -fx-border-style: solid; -fx-border-width: 2; -fx-border-color: #026799;");
-        label.setPadding(new Insets(10, 15, 10, 10));
-        label.setPrefSize(287, 39);
-        AnchorPane.setTopAnchor(label, 112.0);
-        AnchorPane.setLeftAnchor(label, left);
-        return label;
+    private String toHex(Color color) {
+        return String.format("#%02x%02x%02x",
+            (int)(color.getRed() * 255),
+            (int)(color.getGreen() * 255),
+            (int)(color.getBlue() * 255));
     }
     
-    private Button createGridButton(String text) 
-    {
-        Button button = new Button(text);
-        button.setStyle("-fx-background-color: #0087a6; -fx-border-color: #ffffff;");
-        button.setTextFill(javafx.scene.paint.Color.WHITE);
-        button.setFont(Font.font("Verdana", 21));
-        button.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        button.setOnAction(e -> handleButtonPress(text));
-        return button;
-    }
-    
-    private void handleButtonPress(String buttonText) 
-    {
+    private void handleButtonPress(String buttonText) {
         StringBuilder currentSide = isLeftSideActive ? leftHandSide : rightHandSide;
         
-        switch (buttonText) 
-        {
+        switch (buttonText) {
             case "CLR":
                 currentSide.setLength(0);
                 break;
             case "DEL":
                 if (currentSide.length() > 0) {
-                    // Check for operators with spaces first
                     if (currentSide.toString().endsWith(" - ")) {
                         currentSide.setLength(currentSide.length() - 3);
                     } 
                     else if (currentSide.toString().endsWith(" + ")) {
                         currentSide.setLength(currentSide.length() - 3);
                     }
-                    // Handle x^3 term deletion
                     else if (currentSide.toString().endsWith("x^3")) {
                         currentSide.setLength(currentSide.length() - 3);
                     }
-                    // Handle x^2 term deletion
                     else if (currentSide.toString().endsWith("x^2")) {
                         currentSide.setLength(currentSide.length() - 3);
                     }
-                    // Handle x term deletion
                     else if (currentSide.toString().endsWith("x")) {
                         currentSide.setLength(currentSide.length() - 1);
                     }
-                    // Default case - delete single character
                     else {
                         currentSide.setLength(currentSide.length() - 1);
                     }
@@ -242,26 +379,20 @@ public class PolynomialCalculatorPane extends AnchorPane
                 break;
             default:
                 if (canAddToEquation(currentSide.toString(), buttonText)) {
-                    // For operators, add with spaces around them
                     if (isOperator(buttonText)) {
-                        // Don't add space before if it's the first character
                         if (currentSide.length() == 0) {
                             currentSide.append(buttonText).append(" ");
                         } 
-                        // Don't add space before if previous character is space
                         else if (currentSide.toString().endsWith(" ")) {
                             currentSide.append(buttonText).append(" ");
                         }
-                        // Normal case - add spaces around operator
                         else {
                             currentSide.append(" ").append(buttonText).append(" ");
                         }
                     } 
-                    // For x terms, add directly (no space after)
                     else if (isXTerm(buttonText)) {
                         currentSide.append(buttonText);
                     }
-                    // For numbers, add directly (no space after)
                     else {
                         currentSide.append(buttonText);
                     }
@@ -270,94 +401,70 @@ public class PolynomialCalculatorPane extends AnchorPane
         updateLabels();
     }
     
-    private boolean canAddToEquation(String current, String toAdd) 
-    {
+    private boolean canAddToEquation(String current, String toAdd) {
         current = current.trim();
         
-        // Can't add number right after x term
         if (isNumber(toAdd) && (current.endsWith("x") || 
                                current.endsWith("x^2") || 
-                               current.endsWith("x^3"))) 
-        {
+                               current.endsWith("x^3"))) {
             return false;
         }
         
-        // Can't add operator after operator
         if (isOperator(toAdd) && (current.endsWith("+") || 
-                                 current.endsWith("-"))) 
-        {
+                                 current.endsWith("-"))) {
             return false;
         }
         
-        // Can't add x term after x term
         if (isXTerm(toAdd) && (current.endsWith("x") || 
                                current.endsWith("x^2") || 
-                               current.endsWith("x^3"))) 
-        {
+                               current.endsWith("x^3"))) {
             return false;
         }
         
         return true;
     }
     
-    private boolean isNumber(String s) 
-    {
+    private boolean isNumber(String s) {
         return s.matches("[0-9]");
     }
     
-    private boolean isXTerm(String s) 
-    {
+    private boolean isXTerm(String s) {
         return s.equals("x") || s.equals("x^2") || s.equals("x^3");
     }
     
-    private boolean isOperator(String s) 
-    {
+    private boolean isOperator(String s) {
         return s.equals("+") || s.equals("-");
     }
     
-    private boolean endsWithOperator(String s) 
-    {
+    private boolean endsWithOperator(String s) {
         s = s.trim();
         return s.endsWith("+") || s.endsWith("-");
     }
     
-    private void updateLabels() 
-    {
+    private void updateLabels() {
         lhsLabel.setText(leftHandSide.length() == 0 ? "LHS" : leftHandSide.toString().trim());
         rhsLabel.setText(rightHandSide.length() == 0 ? "RHS" : rightHandSide.toString().trim());
     }
     
-    private void solveEquation() 
-    {
+    private void solveEquation() {
         String lhs = leftHandSide.toString().trim();
         String rhs = rightHandSide.toString().trim();
         
-        if (lhs.isEmpty() || rhs.isEmpty()) 
-        {
+        if (lhs.isEmpty() || rhs.isEmpty()) {
             resultLabel.setText("Error: Both sides must have values");
+            resultLabel.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + "; -fx-text-fill: " + toHex(ERROR_RED) + ";");
             return;
         }
         
-        if (endsWithOperator(lhs) || endsWithOperator(rhs)) 
-        {
+        if (endsWithOperator(lhs) || endsWithOperator(rhs)) {
             resultLabel.setText("Error: Cannot end with operator");
+            resultLabel.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + "; -fx-text-fill: " + toHex(ERROR_RED) + ";");
             return;
         }
         
         calculatorLogic.set(lhs, rhs);
         
         resultLabel.setText(calculatorLogic.calculate());
-        lineChart.setTitle("Graph: " + calculatorLogic.getEquation());
-        
-        XYChart.Series<Number, Number> series = new XYChart.Series<>();
-        series.setName("Function");
-        
-        double step = 0.01;
-        for (double x = -10; x <= 10; x += step) {
-            series.getData().add(new XYChart.Data<>(x, calculatorLogic.y(x)));
-        }
-                
-        lineChart.getData().clear();
-        lineChart.getData().add(series);
+        resultLabel.setStyle("-fx-background-color: " + toHex(DARK_SURFACE) + "; -fx-text-fill: " + toHex(LIGHT_TEXT) + ";");
     }
 }
